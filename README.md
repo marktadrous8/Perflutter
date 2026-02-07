@@ -2,7 +2,7 @@
 
 Perflutter is a lightweight, zero-configuration performance tracking tool for Flutter applications. It helps you monitor frame drops, memory usage, and screen loading times with a simple overlay inspector.
 
-=
+
 ## Features
 
 *   **Zero Configuration:** No external state management usage (no Riverpod/Provider setup required).
