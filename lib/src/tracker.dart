@@ -1,7 +1,12 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/widgets.dart';
+
+enum PerflutterTriggerMode {
+  floatingButton, // Shows a FAB on top of the screen
+  longPress,      // Hidden, triggered by long press anywhere (if not consumed)
+}
 
 class ScreenPerformanceData {
   final String screenName;
@@ -40,15 +45,49 @@ class ScreenPerformanceData {
   }
 }
 
-class PerflutterTracker extends StateNotifier<List<ScreenPerformanceData>> {
+class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
+  static final PerflutterTracker instance = PerflutterTracker._internal();
+  
   DateTime sessionStartTime;
   final List<String> journey = [];
-  
-  PerflutterTracker() : sessionStartTime = DateTime.now(), super([]) {
+  List<ScreenPerformanceData> history = [];
+
+  PerflutterTracker._internal() : sessionStartTime = DateTime.now() {
     _initFrameCallback();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  PerflutterTriggerMode _triggerMode = PerflutterTriggerMode.floatingButton;
+  PerflutterTriggerMode get triggerMode => _triggerMode;
+
+  set triggerMode(PerflutterTriggerMode mode) {
+    if (_triggerMode != mode) {
+      _triggerMode = mode;
+      notifyListeners();
+    }
   }
 
   ScreenPerformanceData? _currentScreen;
+  ScreenPerformanceData? get currentScreen => _currentScreen;
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      if (_currentScreen != null) {
+        _currentScreen!.endTime = DateTime.now();
+        _currentScreen!.peakMemoryMb = _getProcessMemoryMb();
+        history = [...history, _currentScreen!];
+        _currentScreen = null;
+        notifyListeners();
+      }
+    }
+  }
 
   void _initFrameCallback() {
     SchedulerBinding.instance.addTimingsCallback((List<FrameTiming> timings) {
@@ -60,66 +99,52 @@ class PerflutterTracker extends StateNotifier<List<ScreenPerformanceData>> {
     });
   }
 
-  ScreenPerformanceData? get currentScreen => _currentScreen;
-
   void onScreenChanged(String? screenName, {bool isPop = false}) {
     final isIgnored = screenName == null || 
         screenName == "PerflutterReportScreen" || 
         screenName == "MainRoute" ||
         screenName == "/";
 
-    // 1. If we are pushing an ignored screen (like the report itself),
-    // don't stop the current screen. Just return.
     if (!isPop && isIgnored) {
       return;
     }
 
-    // 2. If we are popping back to the SAME screen that is currently active,
-    // don't restart. This allows Page A -> Report -> Page A to be one session.
     if (isPop && _currentScreen != null && _currentScreen!.screenName == screenName) {
       return;
     }
 
-    // 3. Otherwise, stop the current session and start a new one.
     if (_currentScreen != null) {
       _currentScreen!.endTime = DateTime.now();
       _currentScreen!.peakMemoryMb = _getProcessMemoryMb();
-      state = [...state, _currentScreen!];
+      history = [...history, _currentScreen!];
       _currentScreen = null;
+      notifyListeners();
     }
 
     if (isIgnored) return;
 
-    // Add to journey
     journey.add(screenName!);
 
-    // Start new screen session
     _currentScreen = ScreenPerformanceData(screenName);
     _currentScreen!.peakMemoryMb = _getProcessMemoryMb();
+    notifyListeners();
   }
 
   double _getProcessMemoryMb() {
     try {
-      // Basic memory check - RSS is roughly the amount of memory consumed by the process.
-      // Note: This is an approximation.
       return ProcessInfo.currentRss / (1024 * 1024);
     } catch (e) {
       return 0;
     }
   }
 
-  List<ScreenPerformanceData> get fullHistory => [...state, if (_currentScreen != null) _currentScreen!];
-
   void reset() {
     sessionStartTime = DateTime.now();
     journey.clear();
-    state = [];
+    history = [];
     if (_currentScreen != null) {
       _currentScreen = ScreenPerformanceData(_currentScreen!.screenName);
     }
+    notifyListeners();
   }
 }
-
-final perflutterTrackerProvider = StateNotifierProvider<PerflutterTracker, List<ScreenPerformanceData>>((ref) {
-  return PerflutterTracker();
-});

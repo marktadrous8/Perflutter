@@ -1,11 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'tracker.dart';
 
 class PerflutterNavigatorObserver extends AutoRouterObserver {
-  final WidgetRef ref;
-  PerflutterNavigatorObserver(this.ref);
+  PerflutterNavigatorObserver();
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -33,14 +31,14 @@ class PerflutterNavigatorObserver extends AutoRouterObserver {
     final name = route.settings.name;
     if (name != null) {
       Future.microtask(() {
-        ref.read(perflutterTrackerProvider.notifier).onScreenChanged(name);
+        PerflutterTracker.instance.onScreenChanged(name);
       });
     }
   }
 
   void _logTab(TabPageRoute route) {
     Future.microtask(() {
-      ref.read(perflutterTrackerProvider.notifier).onScreenChanged("Tab: ${route.name}");
+      PerflutterTracker.instance.onScreenChanged("Tab: ${route.name}");
     });
   }
 }

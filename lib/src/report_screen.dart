@@ -3,19 +3,19 @@ import 'dart:io';
 import 'dart:math';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'tracker.dart';
 
 enum PerflutterSort { latest, lowPerformance, collect }
 
-class PerflutterReportScreen extends ConsumerStatefulWidget {
-  const PerflutterReportScreen({super.key});
+class PerflutterReportScreen extends StatefulWidget {
+  final VoidCallback? onClose;
+  const PerflutterReportScreen({super.key, this.onClose});
 
   @override
-  ConsumerState<PerflutterReportScreen> createState() => _PerflutterReportScreenState();
+  State<PerflutterReportScreen> createState() => _PerflutterReportScreenState();
 }
 
-class _PerflutterReportScreenState extends ConsumerState<PerflutterReportScreen> {
+class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
   PerflutterSort _currentSort = PerflutterSort.latest;
   String _deviceDetails = 'Fetching device info...';
   late final Timer _refreshTimer;
@@ -62,123 +62,155 @@ class _PerflutterReportScreenState extends ConsumerState<PerflutterReportScreen>
 
   @override
   Widget build(BuildContext context) {
-    final tracker = ref.watch(perflutterTrackerProvider.notifier);
-    final history = ref.watch(perflutterTrackerProvider); 
-    final current = tracker.currentScreen;
-    
-    // Aggregate history and current screen for a unified unique-per-screen view
-    List<ScreenPerformanceData> historyWithCurrent;
-    if (current != null) {
-      final existingIndex = history.indexWhere((s) => s.screenName == current.screenName);
-      if (existingIndex != -1) {
-        final aggregated = history[existingIndex].aggregate(current);
-        historyWithCurrent = List.from(history);
-        historyWithCurrent.removeAt(existingIndex);
-        historyWithCurrent.add(aggregated);
-      } else {
-        historyWithCurrent = [...history, current];
-      }
-    } else {
-      historyWithCurrent = history;
-    }
+    return AnimatedBuilder(
+      animation: PerflutterTracker.instance,
+      builder: (context, _) {
+        final tracker = PerflutterTracker.instance;
+        final history = tracker.history; 
+        final current = tracker.currentScreen;
+        
+        // Aggregate history and current screen for a unified unique-per-screen view
+        List<ScreenPerformanceData> historyWithCurrent;
+        if (current != null) {
+          final existingIndex = history.indexWhere((s) => s.screenName == current.screenName);
+          if (existingIndex != -1) {
+            final aggregated = history[existingIndex].aggregate(current);
+            historyWithCurrent = List.from(history);
+            historyWithCurrent.removeAt(existingIndex);
+            historyWithCurrent.add(aggregated);
+          } else {
+            historyWithCurrent = [...history, current];
+          }
+        } else {
+          historyWithCurrent = history;
+        }
 
-    final totalSessionDuration = DateTime.now().difference(tracker.sessionStartTime);
+        final totalSessionDuration = DateTime.now().difference(tracker.sessionStartTime);
 
-    // Aggregated Session Data
-    var totalFrames = 0;
-    var totalDroppedFrames = 0;
-    double maxMemory = 0;
-    for (final data in historyWithCurrent) {
-      totalFrames += data.totalFrames;
-      totalDroppedFrames += data.droppedFrames;
-      maxMemory = max(maxMemory, data.peakMemoryMb);
-    }
-    final overallDropRate = totalFrames > 0 ? (totalDroppedFrames / totalFrames * 100) : 0.0;
+        // Aggregated Session Data
+        var totalFrames = 0;
+        var totalDroppedFrames = 0;
+        double maxMemory = 0;
+        for (final data in historyWithCurrent) {
+          totalFrames += data.totalFrames;
+          totalDroppedFrames += data.droppedFrames;
+          maxMemory = max(maxMemory, data.peakMemoryMb);
+        }
+        final overallDropRate = totalFrames > 0 ? (totalDroppedFrames / totalFrames * 100) : 0.0;
 
-    // Apply Sorting
-    var displayedHistory = <ScreenPerformanceData>[];
-    if (_currentSort == PerflutterSort.collect || _currentSort == PerflutterSort.latest) {
-      // Both are now naturally aggregated; collect sorts by visits, latest by recency (the list order)
-      displayedHistory = historyWithCurrent.reversed.toList();
-      if (_currentSort == PerflutterSort.collect) {
-        displayedHistory.sort((a, b) => b.visitCount.compareTo(a.visitCount));
-      }
-    } else if (_currentSort == PerflutterSort.lowPerformance) {
-      displayedHistory = List.from(historyWithCurrent);
-      displayedHistory.sort((a, b) => (b.droppedFrames / max(1, b.totalFrames)).compareTo(a.droppedFrames / max(1, a.totalFrames)));
-    }
+        // Apply Sorting
+        var displayedHistory = <ScreenPerformanceData>[];
+        if (_currentSort == PerflutterSort.collect || _currentSort == PerflutterSort.latest) {
+          // Both are now naturally aggregated; collect sorts by visits, latest by recency (the list order)
+          displayedHistory = historyWithCurrent.reversed.toList();
+          if (_currentSort == PerflutterSort.collect) {
+            displayedHistory.sort((a, b) => b.visitCount.compareTo(a.visitCount));
+          }
+        } else if (_currentSort == PerflutterSort.lowPerformance) {
+          displayedHistory = List.from(historyWithCurrent);
+          displayedHistory.sort((a, b) => (b.droppedFrames / max(1, b.totalFrames)).compareTo(a.droppedFrames / max(1, a.totalFrames)));
+        }
 
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF0F7FF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2C6BA4),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'PerFlutter',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-      ),
-        body: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: _buildOverallSummary(
-                totalSessionDuration,
-                totalFrames,
-                totalDroppedFrames,
-                maxMemory,
-                overallDropRate,
-                history.length,
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    const Text('SORT BY:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(width: 8),
-                    _buildSortChip('Latest', PerflutterSort.latest),
-                    const SizedBox(width: 8),
-                    _buildSortChip('Low Perf', PerflutterSort.lowPerformance),
-                    const SizedBox(width: 8),
-                    _buildSortChip('Collect', PerflutterSort.collect),
-                  ],
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: PopScope(
+            canPop: false,
+            onPopInvoked: (didPop) {
+              if (didPop) return;
+              if (widget.onClose != null) {
+                widget.onClose!();
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
+            child: Scaffold(
+              backgroundColor: const Color(0xFFF0F7FF),
+              appBar: AppBar(
+                backgroundColor: const Color(0xFF2C6BA4),
+                centerTitle: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    if (widget.onClose != null) {
+                      widget.onClose!();
+                    } else {
+                      Navigator.of(context).pop();
+                    }
+                  },
                 ),
+            title: const Text(
+              'PerFlutter',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final data = displayedHistory[index];
-                  return _buildScreenCard(data);
-                },
-                childCount: displayedHistory.length,
+            iconTheme: const IconThemeData(color: Colors.white),
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => tracker.reset(),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  _buildDeviceInfo(),
-                  _buildJourney(tracker.journey),
-                ],
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: _showSettingsDialog,
               ),
+            ],
+          ),
+            body: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildOverallSummary(
+                    totalSessionDuration,
+                    totalFrames,
+                    totalDroppedFrames,
+                    maxMemory,
+                    overallDropRate,
+                    history.length,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Text('SORT BY:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        const SizedBox(width: 8),
+                        _buildSortChip('Latest', PerflutterSort.latest),
+                        const SizedBox(width: 8),
+                        _buildSortChip('Low Perf', PerflutterSort.lowPerformance),
+                        const SizedBox(width: 8),
+                        _buildSortChip('Collect', PerflutterSort.collect),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final data = displayedHistory[index];
+                      return _buildScreenCard(data);
+                    },
+                    childCount: displayedHistory.length,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      _buildDeviceInfo(),
+                      _buildJourney(tracker.journey),
+                    ],
+                  ),
+                ),
+                const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+              ],
             ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
-          ],
-        ),
-      ),
+          ),
+          ), 
+        );
+      }
     );
   }
 
@@ -202,6 +234,59 @@ class _PerflutterReportScreenState extends ConsumerState<PerflutterReportScreen>
           ),
         ),
       ),
+    );
+  }
+
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final tracker = PerflutterTracker.instance;
+            return AlertDialog(
+              title: const Text('Settings'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Trigger Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  RadioListTile<PerflutterTriggerMode>(
+                    title: const Text('Floating Button'),
+                    value: PerflutterTriggerMode.floatingButton,
+                    groupValue: tracker.triggerMode,
+                    onChanged: (value) {
+                      if (value != null) {
+                        tracker.triggerMode = value;
+                        setState(() {});
+                      }
+                    },
+                  ),
+                  RadioListTile<PerflutterTriggerMode>(
+                    title: const Text('Long Press'),
+                    subtitle: const Text('Long press anywhere to open'),
+                    value: PerflutterTriggerMode.longPress,
+                    groupValue: tracker.triggerMode,
+                    onChanged: (value) {
+                      if (value != null) {
+                        tracker.triggerMode = value;
+                        setState(() {});
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Done'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -284,7 +369,7 @@ class _PerflutterReportScreenState extends ConsumerState<PerflutterReportScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildMetricColumn('Frames Perf', '${(100 - dropRate).toStringAsFixed(1)}%', _getPerformanceColor(dropRate)),
+              _buildMetricColumn('Frames Health', '${(100 - dropRate).toStringAsFixed(1)}%', _getPerformanceColor(dropRate)),
               _buildMetricColumn('Total Frames', frames.toString(), const Color(0xFF2C6BA4)),
               _buildMetricColumn('Dropped Frames', dropped.toString(), _getPerformanceColor(dropRate)),
             ],
