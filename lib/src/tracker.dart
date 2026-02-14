@@ -3,25 +3,39 @@ import 'dart:math';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+/// The activation mode used to open the performance report overlay.
 enum PerflutterTriggerMode {
+  /// Shows a draggable floating action button.
   floatingButton, // Shows a FAB on top of the screen
+  /// Opens the report when the user long-presses on screen.
   longPress,      // Hidden, triggered by long press anywhere (if not consumed)
 }
 
+/// Aggregated performance metrics collected for a single screen.
 class ScreenPerformanceData {
+  /// Route or screen name.
   final String screenName;
+  /// Timestamp when this screen record started.
   final DateTime startTime;
+  /// Timestamp when this screen record ended.
   DateTime? endTime;
+  /// Total frames rendered while this screen was active.
   int totalFrames = 0;
+  /// Frames that exceeded the 16.66 ms budget.
   int droppedFrames = 0;
+  /// Peak process memory usage in MB captured for this screen.
   double peakMemoryMb = 0;
+  /// Number of visits included in this record.
   int visitCount = 1;
   Duration? _accumulatedDuration;
 
+  /// Creates a record for [screenName] and starts timing immediately.
   ScreenPerformanceData(this.screenName) : startTime = DateTime.now();
 
+  /// Elapsed time for this screen visit or aggregated visits.
   Duration get duration => _accumulatedDuration ?? (endTime ?? DateTime.now()).difference(startTime);
 
+  /// Records a frame timing sample.
   void recordFrame(FrameTiming timing) {
     totalFrames++;
     if (timing.totalSpan.inMicroseconds > 16666) {
@@ -29,6 +43,7 @@ class ScreenPerformanceData {
     }
   }
 
+  /// Combines this record with another visit of the same screen.
   ScreenPerformanceData aggregate(ScreenPerformanceData other) {
     final aggregated = ScreenPerformanceData(screenName);
     aggregated.totalFrames = totalFrames + other.totalFrames;
@@ -45,11 +60,16 @@ class ScreenPerformanceData {
   }
 }
 
+/// Core tracker that stores session metrics and notifies listeners.
 class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
+  /// Singleton tracker instance used by package widgets.
   static final PerflutterTracker instance = PerflutterTracker._internal();
   
+  /// Session start timestamp.
   DateTime sessionStartTime;
+  /// Ordered route history for the current session.
   final List<String> journey = [];
+  /// Completed screen performance snapshots.
   List<ScreenPerformanceData> history = [];
 
   PerflutterTracker._internal() : sessionStartTime = DateTime.now() {
@@ -58,6 +78,7 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   PerflutterTriggerMode _triggerMode = PerflutterTriggerMode.floatingButton;
+  /// Current trigger mode used by [PerflutterTrigger].
   PerflutterTriggerMode get triggerMode => _triggerMode;
 
   set triggerMode(PerflutterTriggerMode mode) {
@@ -68,6 +89,7 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   ScreenPerformanceData? _currentScreen;
+  /// Screen currently being tracked.
   ScreenPerformanceData? get currentScreen => _currentScreen;
 
   @override
@@ -99,6 +121,7 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
+  /// Registers a route transition with optional pop semantics.
   void onScreenChanged(String? screenName, {bool isPop = false}) {
     final isIgnored = screenName == null || 
         screenName == "PerflutterReportScreen" || 
@@ -123,7 +146,7 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
 
     if (isIgnored) return;
 
-    journey.add(screenName!);
+    journey.add(screenName);
 
     _currentScreen = ScreenPerformanceData(screenName);
     _currentScreen!.peakMemoryMb = _getProcessMemoryMb();
@@ -138,6 +161,7 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Clears journey/history and starts a fresh tracking session.
   void reset() {
     sessionStartTime = DateTime.now();
     journey.clear();

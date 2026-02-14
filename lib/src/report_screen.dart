@@ -5,10 +5,21 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'tracker.dart';
 
-enum PerflutterSort { latest, lowPerformance, collect }
+/// Sorting modes for the report screen list.
+enum PerflutterSort {
+  /// Newest screens first.
+  latest,
+  /// Highest dropped-frame rate first.
+  lowPerformance,
+  /// Aggregate and sort by visit count.
+  collect
+}
 
+/// Full-screen report UI that displays collected performance metrics.
 class PerflutterReportScreen extends StatefulWidget {
+  /// Called when the report should be closed.
   final VoidCallback? onClose;
+  /// Creates a report screen.
   const PerflutterReportScreen({super.key, this.onClose});
 
   @override
@@ -115,7 +126,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
           textDirection: TextDirection.ltr,
           child: PopScope(
             canPop: false,
-            onPopInvoked: (didPop) {
+            onPopInvokedWithResult: (didPop, result) {
               if (didPop) return;
               if (widget.onClose != null) {
                 widget.onClose!();
@@ -252,28 +263,26 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
                 children: [
                   const Text('Trigger Mode', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  RadioListTile<PerflutterTriggerMode>(
-                    title: const Text('Floating Button'),
-                    value: PerflutterTriggerMode.floatingButton,
+                  RadioGroup<PerflutterTriggerMode>(
                     groupValue: tracker.triggerMode,
                     onChanged: (value) {
-                      if (value != null) {
-                        tracker.triggerMode = value;
-                        setState(() {});
-                      }
+                      if (value == null) return;
+                      tracker.triggerMode = value;
+                      setState(() {});
                     },
-                  ),
-                  RadioListTile<PerflutterTriggerMode>(
-                    title: const Text('Long Press'),
-                    subtitle: const Text('Long press anywhere to open'),
-                    value: PerflutterTriggerMode.longPress,
-                    groupValue: tracker.triggerMode,
-                    onChanged: (value) {
-                      if (value != null) {
-                        tracker.triggerMode = value;
-                        setState(() {});
-                      }
-                    },
+                    child: const Column(
+                      children: [
+                        RadioListTile<PerflutterTriggerMode>(
+                          title: Text('Floating Button'),
+                          value: PerflutterTriggerMode.floatingButton,
+                        ),
+                        RadioListTile<PerflutterTriggerMode>(
+                          title: Text('Long Press'),
+                          subtitle: Text('Long press anywhere to open'),
+                          value: PerflutterTriggerMode.longPress,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

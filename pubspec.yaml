@@ -1,19 +1,19 @@
 name: perflutter
 description: A reusable performance tracking package for Flutter navigation.
-version: 0.0.1
+version: 0.0.2
 homepage: https://github.com/marktadrous8/Perflutter
 repository: https://github.com/marktadrous8/Perflutter
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.0.0"
+  sdk: '>=3.7.0 <4.0.0'
+  flutter: ">=3.29.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  device_info_plus: ^10.0.0
-  auto_route: ^8.0.0
+  device_info_plus: ^10.1.2
+  auto_route: ^8.1.4
 
 dev_dependencies:
   flutter_test:

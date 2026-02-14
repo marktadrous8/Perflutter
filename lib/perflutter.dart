@@ -1,3 +1,4 @@
+/// Perflutter public API exports.
 library nav_performance_tracker;
 
 export 'src/tracker.dart';

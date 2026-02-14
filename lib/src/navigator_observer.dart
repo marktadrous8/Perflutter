@@ -2,7 +2,9 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'tracker.dart';
 
+/// Navigator observer that forwards route changes to [PerflutterTracker].
 class PerflutterNavigatorObserver extends AutoRouterObserver {
+  /// Creates the observer.
   PerflutterNavigatorObserver();
 
   @override

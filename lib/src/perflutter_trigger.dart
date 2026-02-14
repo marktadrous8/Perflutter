@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'report_screen.dart';
 import 'tracker.dart';
 
+/// Wraps app content and provides entry points to the performance report.
 class PerflutterTrigger extends StatefulWidget {
+  /// Root app widget.
   final Widget child;
+  /// Enables/disables report trigger behavior.
   final bool enabled;
   // triggerMode is now handled by the PerflutterTracker singleton, 
   // but we keep this parameter name for backward compatibility.
+  /// Optional initial trigger mode.
   final PerflutterTriggerMode? triggerMode; 
 
+  /// Creates the trigger wrapper.
   const PerflutterTrigger({
     super.key,
     required this.child,
