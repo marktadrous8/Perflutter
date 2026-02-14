@@ -69,8 +69,11 @@ class _PerflutterTriggerState extends State<PerflutterTrigger> {
       child: widget.child,
     );
     
-    // Calculate default position if not set
-    if (_fabPosition == null) {
+    final isFloatingMode = currentMode == PerflutterTriggerMode.floatingButton;
+    final isLongPressMode = currentMode == PerflutterTriggerMode.longPress;
+
+    // Calculate default position only when floating mode is enabled
+    if (isFloatingMode && _fabPosition == null) {
       final size = MediaQuery.of(context).size;
       if (!size.isEmpty) {
          // Default to bottom right: right: 16, bottom: 100
@@ -103,14 +106,14 @@ class _PerflutterTriggerState extends State<PerflutterTrigger> {
           // This allows Long Press to work without blocking the app (translucent)
           // And ensures the tree structure is stable (no reparenting crashes)
           GestureDetector(
-            onLongPress: currentMode == PerflutterTriggerMode.floatingButton ? _toggleReport : null,
+            onLongPress: isLongPressMode ? _toggleReport : null,
             behavior: HitTestBehavior.translucent,
             excludeFromSemantics: true,
             child: content,
           ),
 
           // 2. The Floating Button
-          if (!_showReport && currentMode == PerflutterTriggerMode.floatingButton)
+          if (!_showReport && isFloatingMode && _fabPosition != null)
             Positioned(
               left: _fabPosition!.dx,
               top: _fabPosition!.dy,
