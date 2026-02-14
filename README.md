@@ -17,9 +17,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  perflutter:
-    git:
-      url: https://github.com/marktadrous8/Perflutter
+  perflutter: ^0.0.1
 ```
 
 ## Usage
