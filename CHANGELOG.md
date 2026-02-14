@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.4
+
+- Widened dependency constraints for `auto_route` and `device_info_plus` to support older apps and latest stable releases.
+- Updated README installation snippet to latest version.
+
 ## 0.0.3
 
 - Added runnable package example in `example/main.dart` for pub.dev example tab.
