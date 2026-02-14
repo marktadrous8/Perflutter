@@ -1,6 +1,6 @@
 name: perflutter
 description: A reusable performance tracking package for Flutter navigation.
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/marktadrous8/Perflutter
 repository: https://github.com/marktadrous8/Perflutter
 

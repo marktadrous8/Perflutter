@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.3
+
+- Added runnable package example in `example/main.dart` for pub.dev example tab.
+- Updated README installation snippet to latest version.
+
 ## 0.0.2
 
 - Fixed analyzer warnings and deprecated API usage in report/settings screens.
