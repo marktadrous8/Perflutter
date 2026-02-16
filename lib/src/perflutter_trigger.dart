@@ -33,6 +33,7 @@ class _PerflutterTriggerState extends State<PerflutterTrigger> {
   @override
   void initState() {
     super.initState();
+    PerflutterTracker.instance.enabled = widget.enabled;
     if (widget.triggerMode != null) {
       PerflutterTracker.instance.triggerMode = widget.triggerMode!;
     }
@@ -41,7 +42,20 @@ class _PerflutterTriggerState extends State<PerflutterTrigger> {
   }
 
   @override
+  void didUpdateWidget(covariant PerflutterTrigger oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled != widget.enabled) {
+      PerflutterTracker.instance.enabled = widget.enabled;
+      if (!widget.enabled && _showReport) {_showReport = false;}
+    }
+    if (widget.triggerMode != null && oldWidget.triggerMode != widget.triggerMode) {
+      PerflutterTracker.instance.triggerMode = widget.triggerMode ?? PerflutterTriggerMode.floatingButton;
+    }
+  }
+
+  @override
   void dispose() {
+    PerflutterTracker.instance.setReportOverlayActive(false);
     PerflutterTracker.instance.removeListener(_handleTrackerUpdate);
     super.dispose();
   }
@@ -54,12 +68,14 @@ class _PerflutterTriggerState extends State<PerflutterTrigger> {
     setState(() {
       _showReport = !_showReport;
     });
+    PerflutterTracker.instance.setReportOverlayActive(_showReport);
   }
 
   void _closeReport() {
     setState(() {
       _showReport = false;
     });
+    PerflutterTracker.instance.setReportOverlayActive(false);
   }
 
   @override

@@ -30,6 +30,7 @@ class PerflutterNavigatorObserver extends AutoRouterObserver {
   }
 
   void _logScreen(Route<dynamic> route) {
+    if (!PerflutterTracker.instance.enabled) {return;}
     final name = route.settings.name;
     if (name != null) {
       Future.microtask(() {
@@ -39,6 +40,7 @@ class PerflutterNavigatorObserver extends AutoRouterObserver {
   }
 
   void _logTab(TabPageRoute route) {
+    if (!PerflutterTracker.instance.enabled) {return;}
     Future.microtask(() {
       PerflutterTracker.instance.onScreenChanged("Tab: ${route.name}");
     });

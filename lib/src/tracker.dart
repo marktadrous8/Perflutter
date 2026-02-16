@@ -21,7 +21,7 @@ class ScreenPerformanceData {
   DateTime? endTime;
   /// Total frames rendered while this screen was active.
   int totalFrames = 0;
-  /// Frames that exceeded the 16.66 ms budget.
+  /// Frames where UI or Raster time exceeded the frame budget.
   int droppedFrames = 0;
   /// Peak process memory usage in MB captured for this screen.
   double peakMemoryMb = 0;
@@ -36,9 +36,11 @@ class ScreenPerformanceData {
   Duration get duration => _accumulatedDuration ?? (endTime ?? DateTime.now()).difference(startTime);
 
   /// Records a frame timing sample.
-  void recordFrame(FrameTiming timing) {
+  void recordFrame(FrameTiming timing, int frameBudgetMicros) {
     totalFrames++;
-    if (timing.totalSpan.inMicroseconds > 16666) {
+    final uiMicros = timing.buildDuration.inMicroseconds;
+    final rasterMicros = timing.rasterDuration.inMicroseconds;
+    if (uiMicros > frameBudgetMicros || rasterMicros > frameBudgetMicros) {
       droppedFrames++;
     }
   }
@@ -77,6 +79,26 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
   }
 
+  bool _enabled = true;
+  bool _reportOverlayActive = false;
+  /// Whether tracking and observer processing are active.
+  bool get enabled => _enabled;
+
+  set enabled(bool value) {
+    if (_enabled == value) {return;}
+    _enabled = value;
+    if (!_enabled) {_currentScreen = null;}
+    notifyListeners();
+  }
+
+  /// Whether the Perflutter report overlay is currently visible.
+  bool get reportOverlayActive => _reportOverlayActive;
+
+  /// Tracks report overlay visibility without pausing frame collection.
+  void setReportOverlayActive(bool value) {
+    _reportOverlayActive = value;
+  }
+
   PerflutterTriggerMode _triggerMode = PerflutterTriggerMode.floatingButton;
   /// Current trigger mode used by [PerflutterTrigger].
   PerflutterTriggerMode get triggerMode => _triggerMode;
@@ -100,6 +122,7 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_enabled) {return;}
     if (state == AppLifecycleState.paused) {
       if (_currentScreen != null) {
         _currentScreen!.endTime = DateTime.now();
@@ -113,16 +136,32 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
 
   void _initFrameCallback() {
     SchedulerBinding.instance.addTimingsCallback((List<FrameTiming> timings) {
-      if (_currentScreen != null) {
+      if (!_enabled || _currentScreen == null) {return;}
+      final frameBudgetMicros = _frameBudgetMicros();
         for (final timing in timings) {
-          _currentScreen!.recordFrame(timing);
-        }
+          _currentScreen!.recordFrame(timing, frameBudgetMicros);
       }
     });
   }
 
+  int _frameBudgetMicros() {
+    try {
+      final views = WidgetsBinding.instance.platformDispatcher.views;
+      if (views.isNotEmpty) {
+        final refreshRate = views.first.display.refreshRate;
+        if (refreshRate > 0) {
+          return (1000000 / refreshRate).round();
+        }
+      }
+    } catch (_) {
+      // Fall back to a 60Hz budget if platform data is unavailable.
+    }
+    return 16666;
+  }
+
   /// Registers a route transition with optional pop semantics.
   void onScreenChanged(String? screenName, {bool isPop = false}) {
+    if (!_enabled) {return;}
     final isIgnored = screenName == null || 
         screenName == "PerflutterReportScreen" || 
         screenName == "MainRoute" ||
