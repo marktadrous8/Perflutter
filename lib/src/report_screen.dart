@@ -10,9 +10,7 @@ enum PerflutterSort {
   /// Newest screens first.
   latest,
   /// Highest dropped-frame rate first.
-  lowPerformance,
-  /// Aggregate and sort by visit count.
-  collect
+  lowPerformance
 }
 
 /// Full-screen report UI that displays collected performance metrics.
@@ -28,6 +26,7 @@ class PerflutterReportScreen extends StatefulWidget {
 
 class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
   PerflutterSort _currentSort = PerflutterSort.latest;
+  bool _collectEnabled = true;
   String _deviceDetails = 'Fetching device info...';
   late final Timer _refreshTimer;
 
@@ -80,21 +79,12 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
         final history = tracker.history; 
         final current = tracker.currentScreen;
         
-        // Aggregate history and current screen for a unified unique-per-screen view
-        List<ScreenPerformanceData> historyWithCurrent;
-        if (current != null) {
-          final existingIndex = history.indexWhere((s) => s.screenName == current.screenName);
-          if (existingIndex != -1) {
-            final aggregated = history[existingIndex].aggregate(current);
-            historyWithCurrent = List.from(history);
-            historyWithCurrent.removeAt(existingIndex);
-            historyWithCurrent.add(aggregated);
-          } else {
-            historyWithCurrent = [...history, current];
-          }
-        } else {
-          historyWithCurrent = history;
-        }
+        final historyWithCurrent = current != null
+            ? [...history, current]
+            : List<ScreenPerformanceData>.from(history);
+        final displayedSource = _collectEnabled
+            ? _collectHistory(historyWithCurrent)
+            : historyWithCurrent;
 
         final totalSessionDuration = DateTime.now().difference(tracker.sessionStartTime);
 
@@ -110,15 +100,10 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
         final overallDropRate = totalFrames > 0 ? (totalDroppedFrames / totalFrames * 100) : 0.0;
 
         // Apply Sorting
-        var displayedHistory = <ScreenPerformanceData>[];
-        if (_currentSort == PerflutterSort.collect || _currentSort == PerflutterSort.latest) {
-          // Both are now naturally aggregated; collect sorts by visits, latest by recency (the list order)
-          displayedHistory = historyWithCurrent.reversed.toList();
-          if (_currentSort == PerflutterSort.collect) {
-            displayedHistory.sort((a, b) => b.visitCount.compareTo(a.visitCount));
-          }
+        var displayedHistory = List<ScreenPerformanceData>.from(displayedSource);
+        if (_currentSort == PerflutterSort.latest) {
+          displayedHistory = displayedHistory.reversed.toList();
         } else if (_currentSort == PerflutterSort.lowPerformance) {
-          displayedHistory = List.from(historyWithCurrent);
           displayedHistory.sort((a, b) => (b.droppedFrames / max(1, b.totalFrames)).compareTo(a.droppedFrames / max(1, a.totalFrames)));
         }
 
@@ -192,8 +177,9 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
                         _buildSortChip('Latest', PerflutterSort.latest),
                         const SizedBox(width: 8),
                         _buildSortChip('Low Perf', PerflutterSort.lowPerformance),
+                        const Spacer(),
                         const SizedBox(width: 8),
-                        _buildSortChip('Collect', PerflutterSort.collect),
+                        _buildCollectChip(),
                       ],
                     ),
                   ),
@@ -246,6 +232,47 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildCollectChip() {
+    final label = _collectEnabled ? 'Collected' : 'Collect';
+    final icon = _collectEnabled ? Icons.layers : Icons.layers_outlined;
+    final textColor = _collectEnabled ? Colors.white : Colors.black54;
+    return GestureDetector(
+      onTap: () => setState(() => _collectEnabled = !_collectEnabled),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _collectEnabled ? const Color(0xFF2C6BA4) : Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: _collectEnabled ? const Color(0xFF2C6BA4) : Colors.grey[300]!),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: textColor),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<ScreenPerformanceData> _collectHistory(List<ScreenPerformanceData> history) {
+    final collectedByScreen = <String, ScreenPerformanceData>{};
+    for (final data in history) {
+      final existing = collectedByScreen.remove(data.screenName);
+      collectedByScreen[data.screenName] = existing == null ? data : existing.aggregate(data);
+    }
+    return collectedByScreen.values.toList();
   }
 
   void _showSettingsDialog() {
@@ -437,7 +464,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
         title: Row(
           children: [
             Expanded(child: Text(data.screenName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF2C6BA4)))),
-             if (_currentSort == PerflutterSort.collect)
+             if (_collectEnabled)
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -463,7 +490,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
                 _buildMetricRow('Total Frames', data.totalFrames.toString()),
                 _buildMetricRow('Dropped Frames', data.droppedFrames.toString(), color: _getPerformanceColor(dropRate)),
                 _buildMetricRow('Peak Memory', '${data.peakMemoryMb.toStringAsFixed(1)} MB', color: _getMemoryColor(data.peakMemoryMb)),
-                if (_currentSort == PerflutterSort.collect)
+                if (_collectEnabled)
                   _buildMetricRow('Total Visits', data.visitCount.toString()),
               ],
             ),
