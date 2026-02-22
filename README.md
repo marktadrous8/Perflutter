@@ -17,7 +17,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  perflutter: ^0.0.4
+  perflutter: ^0.0.5
 ```
 
 ## Usage

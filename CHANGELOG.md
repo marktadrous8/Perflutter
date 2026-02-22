@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.5
+
+- Published with cleaner dependency compatibility and example support.
+
 ## 0.0.4
 
 - Widened dependency constraints for `auto_route` and `device_info_plus` to support older apps and latest stable releases.
