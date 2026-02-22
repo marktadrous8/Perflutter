@@ -95,27 +95,7 @@ class _PerflutterTriggerState extends State<PerflutterTrigger> {
 
     // Calculate default position only when floating mode is enabled
     if (isFloatingMode && _fabPosition == null) {
-      final size = MediaQuery.of(context).size;
-      if (!size.isEmpty) {
-         // Default to bottom right: right: 16, bottom: 100
-         // FAB (mini) is approx 40 + padding ~48
-         _fabPosition = Offset(size.width - 16 - 48, size.height - 100 - 48);
-      } else {
-         // Fallback for release mode if size is not yet ready
-         _fabPosition = const Offset(20, 100);
-         
-         // Try to correct it after the frame
-         WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && context.mounted) {
-               final newSize = MediaQuery.of(context).size;
-               if (!newSize.isEmpty) {
-                 setState(() {
-                   _fabPosition = Offset(newSize.width - 16 - 48, newSize.height - 100 - 48);
-                 });
-               }
-            }
-         });
-      }
+      _fabPosition = const Offset(5, 600);
     }
 
     // We build a Stack where the report screen sits on top of the app content
