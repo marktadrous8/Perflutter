@@ -451,6 +451,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
 
   Widget _buildScreenCard(ScreenPerformanceData data) {
     final dropRate = data.totalFrames > 0 ? (data.droppedFrames / data.totalFrames * 100) : 0.0;
+    final frameHealth = data.totalFrames > 0 ? ((data.totalFrames - data.droppedFrames) / data.totalFrames * 100) : 0.0;
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -478,7 +479,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
             Text(_formatDuration(data.duration), style: const TextStyle(fontSize: 11, color: Colors.grey)),
             const Spacer(),
             Icon(Icons.bolt, size: 14, color: _getPerformanceColor(dropRate)),
-            Text(' ${dropRate.toStringAsFixed(1)}%', 
+            Text(' ${frameHealth.toStringAsFixed(1)}%', 
               style: TextStyle(fontSize: 11, color: _getPerformanceColor(dropRate), fontWeight: FontWeight.bold)),
           ],
         ),
@@ -487,6 +488,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                _buildMetricRow('Frame Health', '${frameHealth.toStringAsFixed(1)}%', color: _getPerformanceColor(dropRate)),
                 _buildMetricRow('Total Frames', data.totalFrames.toString()),
                 _buildMetricRow('Dropped Frames', data.droppedFrames.toString(), color: _getPerformanceColor(dropRate)),
                 _buildMetricRow('Peak Memory', '${data.peakMemoryMb.toStringAsFixed(1)} MB', color: _getMemoryColor(data.peakMemoryMb)),
