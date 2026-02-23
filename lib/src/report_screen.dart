@@ -87,6 +87,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
             : historyWithCurrent;
 
         final totalSessionDuration = DateTime.now().difference(tracker.sessionStartTime);
+        final targetFps = _getTargetFps();
 
         // Aggregated Session Data
         var totalFrames = 0;
@@ -98,6 +99,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
           maxMemory = max(maxMemory, data.peakMemoryMb);
         }
         final overallDropRate = totalFrames > 0 ? (totalDroppedFrames / totalFrames * 100) : 0.0;
+        final overallEstimatedFps = _estimateFps(totalFrames, totalDroppedFrames, targetFps);
 
         // Apply Sorting
         var displayedHistory = List<ScreenPerformanceData>.from(displayedSource);
@@ -165,6 +167,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
                     maxMemory,
                     overallDropRate,
                     history.length,
+                    overallEstimatedFps,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -188,7 +191,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final data = displayedHistory[index];
-                      return _buildScreenCard(data);
+                      return _buildScreenCard(data, targetFps);
                     },
                     childCount: displayedHistory.length,
                   ),
@@ -205,7 +208,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
               ],
             ),
           ),
-          ), 
+          ),
         );
       }
     );
@@ -379,7 +382,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
     );
   }
 
-  Widget _buildOverallSummary(Duration duration, int frames, int dropped, double memory, double dropRate, int screenCount) {
+  Widget _buildOverallSummary(Duration duration, int frames, int dropped, double memory, double dropRate, int screenCount, double estimatedFps) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -406,6 +409,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildMetricColumn('Frames Health', '${(100 - dropRate).toStringAsFixed(1)}%', _getPerformanceColor(dropRate)),
+              _buildMetricColumn('FPS (avg)', estimatedFps.toStringAsFixed(1), _getPerformanceColor(dropRate)),
               _buildMetricColumn('Total Frames', frames.toString(), const Color(0xFF2C6BA4)),
               _buildMetricColumn('Dropped Frames', dropped.toString(), _getPerformanceColor(dropRate)),
             ],
@@ -449,10 +453,11 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
   }
 
 
-  Widget _buildScreenCard(ScreenPerformanceData data) {
+  Widget _buildScreenCard(ScreenPerformanceData data, double targetFps) {
     final dropRate = data.totalFrames > 0 ? (data.droppedFrames / data.totalFrames * 100) : 0.0;
     final frameHealth = data.totalFrames > 0 ? ((data.totalFrames - data.droppedFrames) / data.totalFrames * 100) : 0.0;
-    
+    final estimatedFps = _estimateFps(data.totalFrames, data.droppedFrames, targetFps);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -478,8 +483,8 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
           children: [
             Text(_formatDuration(data.duration), style: const TextStyle(fontSize: 11, color: Colors.grey)),
             const Spacer(),
-            Icon(Icons.bolt, size: 14, color: _getPerformanceColor(dropRate)),
-            Text(' ${frameHealth.toStringAsFixed(1)}%', 
+            Icon(Icons.speed, size: 14, color: _getPerformanceColor(dropRate)),
+            Text(' ${estimatedFps.toStringAsFixed(1)} FPS',
               style: TextStyle(fontSize: 11, color: _getPerformanceColor(dropRate), fontWeight: FontWeight.bold)),
           ],
         ),
@@ -489,6 +494,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
             child: Column(
               children: [
                 _buildMetricRow('Frame Health', '${frameHealth.toStringAsFixed(1)}%', color: _getPerformanceColor(dropRate)),
+                _buildMetricRow('FPS (avg)', estimatedFps.toStringAsFixed(1), color: _getPerformanceColor(dropRate)),
                 _buildMetricRow('Total Frames', data.totalFrames.toString()),
                 _buildMetricRow('Dropped Frames', data.droppedFrames.toString(), color: _getPerformanceColor(dropRate)),
                 _buildMetricRow('Peak Memory', '${data.peakMemoryMb.toStringAsFixed(1)} MB', color: _getMemoryColor(data.peakMemoryMb)),
@@ -525,5 +531,26 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
     if (memoryMb < 350) return Colors.green;
     if (memoryMb < 600) return Colors.orange;
     return Colors.red;
+  }
+
+  double _getTargetFps() {
+    try {
+      final views = WidgetsBinding.instance.platformDispatcher.views;
+      if (views.isNotEmpty) {
+        final refreshRate = views.first.display.refreshRate;
+        if (refreshRate > 0) {
+          return refreshRate.toDouble();
+        }
+      }
+    } catch (_) {// Fall back to 60 FPS when refresh rate is unavailable.
+    }
+    return 60;
+  }
+
+  double _estimateFps(int totalFrames, int droppedFrames, double targetFps) {
+    if (totalFrames <= 0) {return 0;}
+    final keptFrames = max(0, totalFrames - droppedFrames);
+    final estimatedFps = targetFps * (keptFrames / totalFrames);
+    return estimatedFps.clamp(0.0, targetFps).toDouble();
   }
 }
