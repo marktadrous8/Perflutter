@@ -74,6 +74,16 @@ MaterialApp(
 *   **Long Press Mode (Recommended):** Long press anywhere on the screen (on non-interactive areas) to open the performance report.
 *   **Floating Button Mode:** A floating chart button will appear on the bottom right.
 
+## Example Use Cases (in `example/lib/main.dart`)
+
+The example app provides 3 screens that you can run individually to capture screenshots:
+
+*   **Healthy screen:** Light interactions and list scrolling. Expected to show good frame health.
+*   **Balanced screen:** Normal UI updates with moderate rendering load.
+*   **Heavy screen:** Includes a circular loader and a button (`Run temporary heavy work`) that intentionally blocks the UI thread for a short time to demonstrate jank/dropped frames and visible loader glitching.
+
+Use the floating Perflutter trigger button on each screen to compare metrics.
+
 ## How Frames Are Calculated
 
 Perflutter listens to Flutter `FrameTiming` samples and tracks frames for the currently active screen.
