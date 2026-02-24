@@ -73,3 +73,33 @@ MaterialApp(
 
 *   **Long Press Mode (Recommended):** Long press anywhere on the screen (on non-interactive areas) to open the performance report.
 *   **Floating Button Mode:** A floating chart button will appear on the bottom right.
+
+## How Frames Are Calculated
+
+Perflutter listens to Flutter `FrameTiming` samples and tracks frames for the currently active screen.
+
+For each frame:
+
+*   `totalFrames` increases by `1`.
+*   The frame is counted as dropped when **either**:
+    *   `buildDuration` (UI thread) > frame budget, or
+    *   `rasterDuration` (raster thread) > frame budget.
+
+Frame budget is computed from the device refresh rate:
+
+*   `frameBudgetMicros = 1,000,000 / refreshRate`
+*   If refresh rate is unavailable, fallback is `16,666 µs` (60Hz).
+
+## What The Colors Mean
+
+### Performance Color (based on drop rate)
+
+*   **Green:** `dropRate < 5%`
+*   **Orange:** `5% <= dropRate < 15%`
+*   **Red:** `dropRate >= 15%`
+
+### Memory Color (based on peak memory in MB)
+
+*   **Green:** `memory < 350 MB`
+*   **Orange:** `350 MB <= memory < 600 MB`
+*   **Red:** `memory >= 600 MB`
