@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.6
+
+- Improved report usability with session-average FPS, collect/collected aggregation mode, session-persisted collect toggle, and default first-card expansion on open.
+- Enhanced the example app with clearer normal/heavy scenarios and raster stress levels up to 10 for easier comparison.
+- Expanded README documentation with a step-by-step usage guide, control explanations, badges, and media placeholders.
+
 ## 0.0.5
 
 - Published with cleaner dependency compatibility and example support.
