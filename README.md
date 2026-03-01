@@ -42,7 +42,7 @@ Add dependency:
 
 ```yaml
 dependencies:
-  perflutter: ^0.0.5
+  perflutter: ^0.0.7
 ```
 
 ## Setup Step By Step
