@@ -172,7 +172,7 @@ On every open, the first screen card is expanded by default for quick inspection
 - `Max Memory`: highest memory usage observed in the session.
 
 ## Per-Screen Card Numbers
-
+![img.png](assets/card.png)
 Each screen card shows:
 
 - screen name
