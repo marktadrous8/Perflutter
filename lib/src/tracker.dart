@@ -81,6 +81,7 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
 
   bool _enabled = true;
   bool _reportOverlayActive = false;
+  bool _collectEnabled = false;
   /// Whether tracking and observer processing are active.
   bool get enabled => _enabled;
 
@@ -94,9 +95,17 @@ class PerflutterTracker extends ChangeNotifier with WidgetsBindingObserver {
   /// Whether the Perflutter report overlay is currently visible.
   bool get reportOverlayActive => _reportOverlayActive;
 
+  /// Whether report screen displays collected (aggregated) entries.
+  bool get collectEnabled => _collectEnabled;
+
   /// Tracks report overlay visibility without pausing frame collection.
   void setReportOverlayActive(bool value) {
     _reportOverlayActive = value;
+  }
+
+  /// Stores collect chip state for the current app session.
+  void setCollectEnabled(bool value) {
+    _collectEnabled = value;
   }
 
   PerflutterTriggerMode _triggerMode = PerflutterTriggerMode.floatingButton;

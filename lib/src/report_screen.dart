@@ -26,13 +26,14 @@ class PerflutterReportScreen extends StatefulWidget {
 
 class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
   PerflutterSort _currentSort = PerflutterSort.latest;
-  bool _collectEnabled = true;
+  bool _collectEnabled = false;
   String _deviceDetails = 'Fetching device info...';
   late final Timer _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    _collectEnabled = PerflutterTracker.instance.collectEnabled;
     _loadDeviceInfo();
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) setState(() {});
@@ -242,7 +243,11 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
     final icon = _collectEnabled ? Icons.layers : Icons.layers_outlined;
     final textColor = _collectEnabled ? Colors.white : Colors.black54;
     return GestureDetector(
-      onTap: () => setState(() => _collectEnabled = !_collectEnabled),
+      onTap: () {
+        final next = !_collectEnabled;
+        PerflutterTracker.instance.setCollectEnabled(next);
+        setState(() => _collectEnabled = next);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
