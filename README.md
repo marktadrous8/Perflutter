@@ -12,6 +12,7 @@ Smoothness is part of product quality. When frames drop:
 - users feel the app is "heavy" or unstable
 
 Perflutter gives you live, session-level evidence for where performance pressure happens, so you can fix real bottlenecks faster.
+
 ![Demo](assets/demo.gif)
 
 ## Why Frames Matter
@@ -151,7 +152,6 @@ This keeps performance instrumentation for development/testing only.
 ![img.png](assets/img.png)
 
 The report contains:
-
 1. Session Overview
 2. Sort + Collect controls
 3. Per-screen cards
@@ -199,8 +199,6 @@ Memory color (by MB):
 - red: `>= 600`
 
 ## Sort And Collect
-![sort.gif](assets/sort.gif)
-
 `Sort`:
 
 - `Latest`: newest entries first
@@ -213,11 +211,13 @@ Memory color (by MB):
 - in collected mode, visits are merged and `Total Visits` is shown
 - collect toggle state is kept during the current app session
 
+![sort.gif](assets/sort.gif)
+
 ## Journey Breadcrumb
 
 Journey section shows navigation order for the session, like:
 
-`Home > Products > ProductDetails > Cart`
+`Home > HeavyScreen > NormalScreen`
 
 Use it to correlate performance issues with the user path that led to them.
 
