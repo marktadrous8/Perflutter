@@ -1,59 +1,74 @@
 # Perflutter
 
-Perflutter is a lightweight, zero-configuration performance tracking tool for Flutter applications. It helps you monitor frame drops, memory usage, and screen loading times with a simple overlay inspector.
+Performance when building in Flutter is why it is named Perflutter as one word.
+Perflutter is a lightweight Flutter package to inspect real navigation performance in-app. It helps you detect dropped frames, estimate FPS, observe memory peaks, and understand user journey flow screen by screen.
 
+## Why This Package
 
-## Features
+Smoothness is part of product quality. When frames drop:
 
-*   **Zero Configuration:** No external state management usage (no Riverpod/Provider setup required).
-*   **Plug & Play:** Simply wrap your app and add an observer.
-*   **Invisible Trigger:** Activate the report screen via a hidden **Long Press** or a floating button.
-*   **Overlay Support:** Works on top of everything (Dialogs, BottomSheets) and doesn't require a Navigator context.
-*   **Metrics:** Connects `FrameTiming` to track dropped frames (jank) and memory approximations per screen.
+- animations stutter
+- gestures feel delayed
+- users feel the app is "heavy" or unstable
+
+Perflutter gives you live, session-level evidence for where performance pressure happens, so you can fix real bottlenecks faster.
+![Demo](assets/demo.gif)
+
+## Why Frames Matter
+Flutter renders continuously. If UI work or raster work exceeds the frame budget, that frame misses target refresh timing and appears as jank.
+
+- at 60Hz, budget is about `16.67ms`
+- at 120Hz, budget is about `8.33ms`
+- more dropped frames means less smooth experience
+
+This is an early indicator that expensive work is happening on the wrong thread or at the wrong time.
+
+## How Perflutter Works
+
+1. `PerflutterNavigatorObserver` listens to route and tab changes.
+2. `PerflutterTracker` starts a screen record for the active route.
+3. Flutter `FrameTiming` samples are collected for the current screen.
+4. Frame, dropped-frame, and memory stats are aggregated.
+5. `PerflutterTrigger` opens a full report overlay on top of your app.
 
 ## Installation
 
-Add the dependency to your `pubspec.yaml`:
+Add dependency:
 
 ```yaml
 dependencies:
   perflutter: ^0.0.5
 ```
 
-## Usage
+## Setup Step By Step
 
-### 1. Add the Navigator Observer
 
-To track screen transitions, add `PerflutterNavigatorObserver` to your `MaterialApp` or Router.
-
-**Standard MaterialApp:**
+### 1) Add Navigator Observer
 
 ```dart
 import 'package:perflutter/perflutter.dart';
 
 MaterialApp(
   navigatorObservers: [
-    PerflutterNavigatorObserver(), // <--- Add this
+    PerflutterNavigatorObserver(),
   ],
   home: HomePage(),
 );
 ```
 
-**AutoRouter:**
+For `MaterialApp.router` / AutoRoute:
 
 ```dart
 MaterialApp.router(
   routerConfig: _appRouter.config(
     navigatorObservers: () => [
-      PerflutterNavigatorObserver(), // <--- Add this
+      PerflutterNavigatorObserver(),
     ],
   ),
 );
 ```
 
-### 2. Wrap your App with the Trigger
-
-Wrap your `MaterialApp` builder (or `home`) with `PerflutterTrigger` to enable the inspector.
+### 2) Wrap App With Trigger
 
 ```dart
 import 'package:perflutter/perflutter.dart';
@@ -61,54 +76,175 @@ import 'package:perflutter/perflutter.dart';
 MaterialApp(
   builder: (context, child) {
     return PerflutterTrigger(
-      triggerMode: PerflutterTriggerMode.longPress, // Options: longPress, floatingButton
-      child: child ?? const SizedBox(),
+      triggerMode: PerflutterTriggerMode.floatingButton,
+      child: child ?? const SizedBox.shrink(),
     );
   },
-  // ...
 );
 ```
 
-## How to Access
+### 3) Open Report
 
-*   **Long Press Mode (Recommended):** Long press anywhere on the screen (on non-interactive areas) to open the performance report.
-*   **Floating Button Mode:** A floating chart button will appear on the bottom right.
+- `floatingButton`: tap the floatingButton
 
-## Example Use Cases (in `example/lib/main.dart`)
+or
+- `longPress`: long-press anywhere to open
 
-The example app provides 2 screens that you can run individually to capture screenshots:
+## Configurable Attributes
 
-*   **Normal screen:** Normal UI updates with moderate rendering load.
-*   **Heavy screen:** Includes a circular loader and a button (`Run temporary heavy work`) that intentionally blocks the UI thread for a short time to demonstrate jank/dropped frames and visible loader glitching.
+### `PerflutterTrigger` parameters
 
-Use the floating Perflutter trigger button on each screen to compare metrics.
+- `child` (`Widget`, required): your app content.
+- `enabled` (`bool`, optional, default `true`): enables/disables the whole feature.
+- `triggerMode` (`PerflutterTriggerMode?`, optional): access entry mode.
+  - `PerflutterTriggerMode.floatingButton`
+  - `PerflutterTriggerMode.longPress`
 
-## How Frames Are Calculated
+Example:
 
-Perflutter listens to Flutter `FrameTiming` samples and tracks frames for the currently active screen.
+```dart
+PerflutterTrigger(
+  enabled: true,
+  triggerMode: PerflutterTriggerMode.floatingButton,
+  child: child ?? const SizedBox.shrink(),
+)
+```
 
-For each frame:
+### Other public API you may use directly
 
-*   `totalFrames` increases by `1`.
-*   The frame is counted as dropped when **either**:
-    *   `buildDuration` (UI thread) > frame budget, or
-    *   `rasterDuration` (raster thread) > frame budget.
+- `PerflutterNavigatorObserver()`: attach to navigator observers for route tracking.
+- `PerflutterReportScreen(onClose: ...)`: report widget with optional close callback.
 
-Frame budget is computed from the device refresh rate:
+## Trigger Behavior
+![trigger.gif](assets/trigger.gif)
 
-*   `frameBudgetMicros = 1,000,000 / refreshRate`
-*   If refresh rate is unavailable, fallback is `16,666 µs` (60Hz).
+- Floating trigger is draggable (`onPanUpdate`) so you can move it away from important UI.
+- Floating trigger uses opacity (`0.5`) so it does not heavily hide content.
+- Trigger mode can be changed from report `Settings` at runtime.
+- Report opens as an overlay screen on top of current app content.
 
-## What The Colors Mean
+## Production Note
 
-### Performance Color (based on drop rate)
+Disable Perflutter in production builds.
 
-*   **Green:** `dropRate < 5%`
-*   **Orange:** `5% <= dropRate < 15%`
-*   **Red:** `dropRate >= 15%`
+Recommended pattern:
 
-### Memory Color (based on peak memory in MB)
+```dart
+import 'package:flutter/foundation.dart';
+import 'package:perflutter/perflutter.dart';
 
-*   **Green:** `memory < 350 MB`
-*   **Orange:** `350 MB <= memory < 600 MB`
-*   **Red:** `memory >= 600 MB`
+MaterialApp(
+  navigatorObservers: kDebugMode ? [PerflutterNavigatorObserver()] : const [],
+  builder: (context, child) {
+    return PerflutterTrigger(
+      enabled: kDebugMode,
+      triggerMode: PerflutterTriggerMode.floatingButton,
+      child: child ?? const SizedBox.shrink(),
+    );
+  },
+);
+```
+
+This keeps performance instrumentation for development/testing only.
+
+## Report Screen Overview
+![img.png](assets/img.png)
+
+The report contains:
+
+1. Session Overview
+2. Sort + Collect controls
+3. Per-screen cards
+4. Device System Info
+5. Journey Breadcrumb
+
+On every open, the first screen card is expanded by default for quick inspection.
+
+## Session Overview Numbers
+![img.png](assets/overview.png)
+
+- `Session Time`: how long the current tracking session has been running.
+- `Total Screen Visits`: how many screen visits were tracked in this session.
+- `Total Frames`: all rendered frames captured during the session.
+- `Dropped Frames`: frames that missed smooth rendering targets.
+- `Frames Health %`: overall smoothness score for the session.
+- `FPS (avg)`: average rendered frames per second for the session.
+- `Max Memory`: highest memory usage observed in the session.
+
+## Per-Screen Card Numbers
+
+Each screen card shows:
+
+- screen name
+- duration for that visit (or aggregated duration in collect mode)
+- estimated FPS
+- frame health
+- total frames
+- dropped frames
+- peak memory
+- total visits (`xN`) only when collect mode is enabled
+
+## Color Meaning
+
+Performance color (by drop rate):
+
+- green: `< 5%`
+- orange: `5%` to `< 15%`
+- red: `>= 15%`
+
+Memory color (by MB):
+
+- green: `< 350`
+- orange: `350` to `< 600`
+- red: `>= 600`
+
+## Sort And Collect
+![sort.gif](assets/sort.gif)
+
+`Sort`:
+
+- `Latest`: newest entries first
+- `Low Perf`: highest dropped-frame ratio first
+
+`Collect` button:
+
+- `Collect` (off): show each visit separately
+- `Collected` (on): merge same screen names into one aggregated card
+- in collected mode, visits are merged and `Total Visits` is shown
+- collect toggle state is kept during the current app session
+
+## Journey Breadcrumb
+
+Journey section shows navigation order for the session, like:
+
+`Home > Products > ProductDetails > Cart`
+
+Use it to correlate performance issues with the user path that led to them.
+
+## Device System Info
+
+Shows current device descriptor:
+
+- Android: `manufacturer + model + Android version`
+- iOS: `device name + system name + system version`
+
+This helps you compare performance behavior by device class and OS version.
+
+## All Buttons Explained
+
+- `Trigger FAB`: open report
+- `Close (X)`: close report and return to app
+- `Refresh`: reset tracking session data
+- `Settings`: switch trigger mode (`Floating Button` / `Long Press`)
+- `Sort chips`: change ordering
+- `Collect chip`: toggle per-visit vs per-screen aggregation
+
+
+## Example App In This Repository
+
+The demo app (`example/lib/main.dart`) includes:
+
+- `Normal Screen`: moderate rendering workload
+- `Heavy Screen`: raster-heavy animated layers with stress levels
+
+Use them to validate that metrics react clearly to lighter vs heavier rendering pressure.
