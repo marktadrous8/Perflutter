@@ -192,7 +192,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final data = displayedHistory[index];
-                      return _buildScreenCard(data, targetFps);
+                      return _buildScreenCard(data, targetFps, keepExpanded: index == 0,);
                     },
                     childCount: displayedHistory.length,
                   ),
@@ -458,7 +458,7 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
   }
 
 
-  Widget _buildScreenCard(ScreenPerformanceData data, double targetFps) {
+  Widget _buildScreenCard(ScreenPerformanceData data, double targetFps, {required bool keepExpanded,}) {
     final dropRate = data.totalFrames > 0 ? (data.droppedFrames / data.totalFrames * 100) : 0.0;
     final frameHealth = data.totalFrames > 0 ? ((data.totalFrames - data.droppedFrames) / data.totalFrames * 100) : 0.0;
     final estimatedFps = _estimateFps(data.totalFrames, data.droppedFrames, targetFps);
@@ -471,6 +471,8 @@ class _PerflutterReportScreenState extends State<PerflutterReportScreen> {
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: ExpansionTile(
+        key: ValueKey<String>('perflutter-screen-${data.screenName}-$keepExpanded'),
+        initiallyExpanded: keepExpanded,
         shape: const RoundedRectangleBorder(side: BorderSide.none),
         title: Row(
           children: [
