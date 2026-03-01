@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.7
+
+- Fixed README media rendering on pub.dev by switching image and GIF links to raw GitHub asset URLs.
+
 ## 0.0.6
 
 - Improved report usability with session-average FPS, collect/collected aggregation mode, session-persisted collect toggle, and default first-card expansion on open.
