@@ -244,7 +244,9 @@ This helps you compare performance behavior by device class and OS version.
 
 The demo app (`example/lib/main.dart`) includes:
 
-- `Normal Screen`: moderate rendering workload
-- `Heavy Screen`: raster-heavy animated layers with stress levels
+|Normal Screen:<br/> Moderate rendering workload. |Heavy Screen:<br/> Raster-heavy animated layers with stress levels. |
+|--|---|
+| ![normal.gif](assets/normal.gif) | ![heavy.gif](assets/heavy.gif)|
+
 
 Use them to validate that metrics react clearly to lighter vs heavier rendering pressure.
