@@ -1,5 +1,9 @@
 # Perflutter
 
+[![pub.dev version](https://img.shields.io/pub/v/perflutter?label=pub.dev&logo=dart)](https://pub.dev/packages/perflutter)
+[![GitHub stars](https://img.shields.io/github/stars/marktadrous8/Perflutter?logo=github)](https://github.com/marktadrous8/Perflutter/stargazers)
+[![License](https://img.shields.io/github/license/marktadrous8/Perflutter)](LICENSE)
+
 Performance when building in Flutter is why it is named Perflutter as one word.
 Perflutter is a lightweight Flutter package to inspect real navigation performance in-app. It helps you detect dropped frames, estimate FPS, observe memory peaks, and understand user journey flow screen by screen.
 
