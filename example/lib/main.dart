@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:perflutter/perflutter.dart';
 
@@ -42,24 +44,12 @@ class ExampleHomePage extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  settings: const RouteSettings(name: 'HealthyScreen'),
-                  builder: (_) => const HealthyScreen(),
+                  settings: const RouteSettings(name: 'NormalScreen'),
+                  builder: (_) => const NormalScreen(),
                 ),
               );
             },
-            child: const Text('1) Healthy screen (good frame health)'),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  settings: const RouteSettings(name: 'BalancedScreen'),
-                  builder: (_) => const BalancedScreen(),
-                ),
-              );
-            },
-            child: const Text('2) Balanced screen (normal workload)'),
+            child: const Text('1) Normal screen (normal workload)'),
           ),
           const SizedBox(height: 12),
           ElevatedButton(
@@ -71,7 +61,7 @@ class ExampleHomePage extends StatelessWidget {
                 ),
               );
             },
-            child: const Text('3) Heavy screen (jank demo)'),
+            child: const Text('2) Heavy screen (jank demo)'),
           ),
         ],
       ),
@@ -79,73 +69,18 @@ class ExampleHomePage extends StatelessWidget {
   }
 }
 
-class HealthyScreen extends StatefulWidget {
-  const HealthyScreen({super.key});
+class NormalScreen extends StatefulWidget {
+  const NormalScreen({super.key});
 
   @override
-  State<HealthyScreen> createState() => _HealthyScreenState();
+  State<NormalScreen> createState() => _NormalScreenState();
 }
 
-class _HealthyScreenState extends State<HealthyScreen> {
-  int counter = 0;
-
+class _NormalScreenState extends State<NormalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Healthy Screen')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Light and responsive UI. Interactions should stay smooth with low dropped frames.',
-            ),
-            const SizedBox(height: 16),
-            Text('Tap count: $counter'),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () => setState(() => counter++),
-              child: const Text('Tap quickly'),
-            ),
-            const SizedBox(height: 16),
-            const Expanded(child: _SmoothList()),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SmoothList extends StatelessWidget {
-  const _SmoothList();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: 30,
-      itemBuilder: (_, index) => ListTile(
-        leading: const Icon(Icons.check_circle_outline),
-        title: Text('Healthy item ${index + 1}'),
-      ),
-    );
-  }
-}
-
-class BalancedScreen extends StatefulWidget {
-  const BalancedScreen({super.key});
-
-  @override
-  State<BalancedScreen> createState() => _BalancedScreenState();
-}
-
-class _BalancedScreenState extends State<BalancedScreen> {
-  double slider = 0.3;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Balanced Screen')),
+      appBar: AppBar(title: const Text('Normal Screen')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -155,18 +90,13 @@ class _BalancedScreenState extends State<BalancedScreen> {
               'Moderate UI updates: should usually remain smooth with occasional tiny pressure.',
             ),
             const SizedBox(height: 12),
-            Slider(
-              value: slider,
-              onChanged: (value) => setState(() => slider = value),
-            ),
-            const SizedBox(height: 12),
             Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   childAspectRatio: 1.4,
                 ),
-                itemCount: 36,
+                itemCount: 120,
                 itemBuilder: (_, index) {
                   final colorSeed = (index * 7) % 255;
                   return Card(
@@ -195,36 +125,98 @@ class HeavyScreen extends StatefulWidget {
   State<HeavyScreen> createState() => _HeavyScreenState();
 }
 
-class _HeavyScreenState extends State<HeavyScreen> {
-  bool isRunningHeavyWork = false;
-  String status = 'Idle';
+class _HeavyScreenState extends State<HeavyScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller;
+  double stressLevel = 1;
+  String status = 'Raster stress running';
 
-  void _runHeavyWork() {
-    if (isRunningHeavyWork) {
-      return;
+  @override
+  void initState() {
+    super.initState();
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  int get layerCount {
+    final level = stressLevel.round();
+    switch (level) {
+      case 1:
+        return 1;
+      case 2:
+        return 8;
+      case 3:
+        return 12;
+      case 4:
+        return 16;
+      case 5:
+        return 20;
+      case 6:
+        return 24;
+      case 7:
+        return 28;
+      case 8:
+        return 32;
+      case 9:
+        return 36;
+      case 10:
+        return 40;
+      default:
+        return 20;
     }
+  }
 
-    setState(() {
-      isRunningHeavyWork = true;
-      status = 'Heavy work started...';
-    });
-
-    final stopwatch = Stopwatch()..start();
-    var accumulator = 0.0;
-    while (stopwatch.elapsedMilliseconds < 2500) {
-      final data = List<int>.generate(12000, (i) => (12000 - i) % 97);
-      data.sort();
-      for (final value in data) {
-        accumulator += value / 3.14159;
-      }
+  double get blurSigma {
+    final level = stressLevel.round();
+    switch (level) {
+      case 1:
+        return 1;
+      case 2:
+        return 8;
+      case 3:
+        return 12;
+      case 4:
+        return 16;
+      case 5:
+        return 20;
+      case 6:
+        return 24;
+      case 7:
+        return 28;
+      case 8:
+        return 32;
+      case 9:
+        return 36;
+      case 10:
+        return 40;
+      default:
+        return 20;
     }
-    stopwatch.stop();
+  }
 
-    setState(() {
-      isRunningHeavyWork = false;
-      status =
-          'Completed in ${stopwatch.elapsedMilliseconds} ms. Result: ${accumulator.toStringAsFixed(1)}';
-    });
+  String get stressLabel {
+    final level = stressLevel.round();
+    if (level <= 2) {
+      return 'Low stress (healthier)';
+    }
+    if (level == 3) {
+      return 'Medium stress';
+    }
+    if (level <= 8) {
+      return 'High stress (heavy)';
+    }
+    if (level <= 10) {
+      return 'Very high stress (intense)';
+    }
+    return 'Extreme stress (maximum)';
   }
 
   @override
@@ -233,32 +225,118 @@ class _HeavyScreenState extends State<HeavyScreen> {
       appBar: AppBar(title: const Text('Heavy Screen')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'This is intentionally heavy. Press the button to block the UI thread temporarily and observe jank frames.',
-            ),
-            const SizedBox(height: 16),
-            const Center(
-              child: SizedBox(
-                width: 56,
-                height: 56,
-                child: CircularProgressIndicator(strokeWidth: 5),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Raster-heavy demo: many animated blur layers run together to stress raster thread and increase dropped frames.',
+              ),
+              const SizedBox(height: 16),
+              Container(
+                height: 320,
+                clipBehavior: Clip.hardEdge,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, child) {
+                    final t = controller.value;
+                    return Stack(
+                      children: [
+                        for (var i = 0; i < layerCount; i++)
+                          _RasterLayer(index: i, t: t, blurSigma: blurSigma),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              AnimatedBuilder(
+                animation: controller,
+                builder: (context, child) {
+                  return LinearProgressIndicator(
+                    minHeight: 8,
+                    value: controller.value,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Stress level: ${stressLevel.round()} - $stressLabel',
+              ),
+              Slider(
+                value: stressLevel,
+                min: 1,
+                max: 10,
+                divisions: 9,
+                onChanged: (value) => setState(() => stressLevel = value),
+              ),
+              const SizedBox(height: 8),
+              Text('Status: $status'),
+              const SizedBox(height: 12),
+              const Text(
+                'Starts at low by default. Move to high for heavier raster load and more dropped frames.',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RasterLayer extends StatelessWidget {
+  const _RasterLayer({
+    required this.index,
+    required this.t,
+    required this.blurSigma,
+  });
+
+  final int index;
+  final double t;
+  final double blurSigma;
+
+  @override
+  Widget build(BuildContext context) {
+    final wave = (t + (index * 0.07)) % 1.0;
+    final left = (wave * 340) - 70;
+    final top = (((1 - wave) * 250) + ((index % 5) * 12)) - 30;
+    final size = 80 + ((index % 4) * 18);
+    final hue = (index * 33) % 360;
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: Transform.rotate(
+        angle: wave * 6.28,
+        child: Opacity(
+          opacity: 0.35,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+              child: Container(
+                width: size.toDouble(),
+                height: size.toDouble(),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      HSVColor.fromAHSV(1, hue.toDouble(), 0.8, 0.9).toColor(),
+                      HSVColor.fromAHSV(
+                        1,
+                        (hue + 80).toDouble() % 360,
+                        0.8,
+                        0.9,
+                      ).toColor(),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _runHeavyWork,
-              child: const Text('Run temporary heavy work'),
-            ),
-            const SizedBox(height: 8),
-            Text('Status: $status'),
-            const SizedBox(height: 12),
-            const Text(
-              'Expected behavior: while heavy work runs, the circular loading can freeze/glitch and dropped frames should increase.',
-            ),
-          ],
+          ),
         ),
       ),
     );

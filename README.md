@@ -76,10 +76,9 @@ MaterialApp(
 
 ## Example Use Cases (in `example/lib/main.dart`)
 
-The example app provides 3 screens that you can run individually to capture screenshots:
+The example app provides 2 screens that you can run individually to capture screenshots:
 
-*   **Healthy screen:** Light interactions and list scrolling. Expected to show good frame health.
-*   **Balanced screen:** Normal UI updates with moderate rendering load.
+*   **Normal screen:** Normal UI updates with moderate rendering load.
 *   **Heavy screen:** Includes a circular loader and a button (`Run temporary heavy work`) that intentionally blocks the UI thread for a short time to demonstrate jank/dropped frames and visible loader glitching.
 
 Use the floating Perflutter trigger button on each screen to compare metrics.
