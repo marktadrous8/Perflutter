@@ -17,7 +17,7 @@ Smoothness is part of product quality. When frames drop:
 
 Perflutter gives you live, session-level evidence for where performance pressure happens, so you can fix real bottlenecks faster.
 
-![Demo](assets/demo.gif)
+![Demo](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/demo.gif)
 
 ## Why Frames Matter
 Flutter renders continuously. If UI work or raster work exceeds the frame budget, that frame misses target refresh timing and appears as jank.
@@ -121,7 +121,7 @@ PerflutterTrigger(
 - `PerflutterReportScreen(onClose: ...)`: report widget with optional close callback.
 
 ## Trigger Behavior
-![trigger.gif](assets/trigger.gif)
+![trigger.gif](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/trigger.gif)
 
 - Floating trigger is draggable (`onPanUpdate`) so you can move it away from important UI.
 - Floating trigger uses opacity (`0.5`) so it does not heavily hide content.
@@ -153,7 +153,7 @@ MaterialApp(
 This keeps performance instrumentation for development/testing only.
 
 ## Report Screen Overview
-![img.png](assets/img.png)
+![img.png](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/img.png)
 
 The report contains:
 1. Session Overview
@@ -165,7 +165,7 @@ The report contains:
 On every open, the first screen card is expanded by default for quick inspection.
 
 ## Session Overview Numbers
-![img.png](assets/overview.png)
+![img.png](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/overview.png)
 
 - `Session Time`: how long the current tracking session has been running.
 - `Total Screen Visits`: how many screen visits were tracked in this session.
@@ -176,7 +176,7 @@ On every open, the first screen card is expanded by default for quick inspection
 - `Max Memory`: highest memory usage observed in the session.
 
 ## Per-Screen Card Numbers
-![img.png](assets/card.png)
+![img.png](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/card.png)
 Each screen card shows:
 
 - screen name
@@ -215,7 +215,7 @@ Memory color (by MB):
 - in collected mode, visits are merged and `Total Visits` is shown
 - collect toggle state is kept during the current app session
 
-![sort.gif](assets/sort.gif)
+![sort.gif](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/sort.gif)
 
 ## Journey Breadcrumb
 
@@ -250,7 +250,7 @@ The demo app (`example/lib/main.dart`) includes:
 
 |Normal Screen:<br/> Moderate rendering workload. |Heavy Screen:<br/> Raster-heavy animated layers with stress levels. |
 |--|---|
-| ![normal.gif](assets/normal.gif) | ![heavy.gif](assets/heavy.gif)|
+| ![normal.gif](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/normal.gif) | ![heavy.gif](https://raw.githubusercontent.com/marktadrous8/Perflutter/main/assets/heavy.gif)|
 
 
 Use them to validate that metrics react clearly to lighter vs heavier rendering pressure.
