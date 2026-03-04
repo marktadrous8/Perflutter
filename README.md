@@ -7,6 +7,26 @@
 Performance when building in Flutter is why it is named Perflutter as one word.
 Perflutter is a lightweight Flutter package to inspect real navigation performance in-app. It helps you detect dropped frames, estimate FPS, observe memory peaks, and understand user journey flow screen by screen.
 
+## Table of Contents
+
+- [Why This Package](#why-this-package)
+- [Why Frames Matter](#why-frames-matter)
+- [How Perflutter Works](#how-perflutter-works)
+- [Installation](#installation)
+- [Setup Step By Step](#setup-step-by-step)
+- [Configurable Attributes](#configurable-attributes)
+- [Trigger Behavior](#trigger-behavior)
+- [Production Note](#production-note)
+- [Report Screen Overview](#report-screen-overview)
+- [Session Overview Numbers](#session-overview-numbers)
+- [Per-Screen Card Numbers](#per-screen-card-numbers)
+- [Color Meaning](#color-meaning)
+- [Sort And Collect](#sort-and-collect)
+- [Journey Breadcrumb](#journey-breadcrumb)
+- [Device System Info](#device-system-info)
+- [All Buttons Explained](#all-buttons-explained)
+- [Example App In This Repository](#example-app-in-this-repository)
+
 ## Why This Package
 
 Smoothness is part of product quality. When frames drop:
